@@ -47,7 +47,7 @@ df_LiTV_drama_info.to_csv('df_LiTV_drama_0703.csv', encoding = ('utf-8'))
 
 
 
-- 一頁式展開版
+- 一頁式網站版
 ```python
 from selenium import webdriver
 import requests
@@ -128,4 +128,86 @@ tv_all=tv_all.append(tv_info_df)
 
 #將資料以utf8編碼儲存為csv檔
 tv_all.reset_index(drop=True).to_csv('Linetv_tv_0703.csv', encoding = ('utf-8'))
+```
+
+- 多頁式網站版
+
+```python
+from selenium import webdriver
+driver_path = r"D:\Program Files\chromedriver\chromedriver.exe" # chromedriver path #使用chrome瀏覽器
+import requests
+import time
+import random
+import pandas as pd
+from bs4 import BeautifulSoup
+
+
+def test1() :
+    #使用webdriver開始瀏覽器進入MyVideo電影頁面
+    driver = webdriver.Chrome(executable_path = driver_path)
+    driver.get("https://www.myvideo.net.tw/TWM_Video/Portal/servlet_main.jsp?classID=movie&menuType=MainCategory&menuId=movie&isAll=Y#page=1")#開啟myvideo電影頁面
+    
+   
+    #建立一個DataFrame空間
+    all_info = pd.DataFrame()
+    
+    #方法一:觀察一下網站發現一共465頁，因此迴圈設置range(1, 466) 方法二:如果網站頁數無法簡單得知就設置10000(估計網站頁數不會超過10000頁)
+    for i in range(1, 10000):
+        
+        #進入頁面後給予網站一小段時間載入
+        time.sleep(2)
+        
+        mov_name = []#抓取網站內片名資訊，並放入一個List中
+        mov_title = driver.find_elements_by_xpath("//div[@class='mov_name']")
+        mov_name = [t.text for t in mov_title]
+
+        #抓取每部影片的url
+        url_list=[]#先抓取頁面中所有<a>標籤中包含href的內容存為list(主要原因:原始碼中<a>標籤沒有賦予class name)
+        for url_top in driver.find_elements_by_xpath("//a[1]"):
+            urltop=url_top.get_attribute("href")
+            url_list.append(urltop)
+
+        real_list = []#利用find功能，在所有href中，篩選包含影片url關鍵字串的href
+        for item in url_list:
+            if item.find("servlet_movie_intro1.jsp?")!=-1:
+                real_list.append(item)
+        
+        #將片名及url的整理成DataFrame
+        detail = {
+            "1.片名": mov_name,
+            "2.網址": real_list,
+        }
+        
+        detail_df = pd.DataFrame(detail)
+        all_info = all_info.append(detail_df)
+
+        
+#         #由於有465頁因此要按464次下一頁
+#         if i < 465:
+            
+#             more_theme_elem = driver.find_element_by_xpath("//div[@class='btn'][3]")
+#             more_theme_elem.click()
+            
+#         else:
+#             break
+        
+        #不知總頁數的情況下，使用try，有"下一頁"就按，如果沒"下一頁"則跳出
+        try:
+#             while driver.find_element_by_xpath("//a[contains(text(),下一頁)]"):
+            next_pag = driver.find_element_by_xpath("//div[@class='btn'][3]")
+            next_pag.click()
+
+        except :
+            break
+    
+    
+    #關閉瀏覽器
+    driver.close()
+    #回傳資料
+    return all_info
+
+#執行
+#將完成的檔案存成csv檔
+test1().reset_index(drop=True).to_csv('myvideo_mov_test.csv')
+
 ```
