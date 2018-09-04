@@ -75,10 +75,9 @@ for i in range(len(jpg_list)):
     HTTP Error 403: Forbidden
     
 
-
-```python
-len(jpg_list) , len(jpg_name)
-```
+- 日據
+- 韓劇
+- 台劇
 
 
 ```python
